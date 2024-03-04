@@ -2,17 +2,40 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from base.models import Drugs
 from rest_framework import serializers
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def members(req):
+#     return Response('members only- yaya')
 
 class DrugsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Drugs
         fields = '__all__'
 
+@api_view(['POST'])
+def register(request):
+    user = User.objects.create_user(
+                username=request.data['username'],
+                email=request.data['email'],
+                password=request.data['password']
+            )
+    user.is_active = True
+    user.is_staff = True
+    user.save()
+    return Response("new user born")
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def drugs(req):
-    pro_drugs = Drugs.objects.all()
-    return Response(DrugsSerializer( pro_drugs, many=True).data)
+    user= req.user
+    pro_drugs = user.drugs_set.all()
+    # pro_drugs = Drugs.objects.all()
+    return Response(DrugsSerializer(pro_drugs, many=True).data)
+
 
 @api_view(['POST'])
 def adddrug(req):
